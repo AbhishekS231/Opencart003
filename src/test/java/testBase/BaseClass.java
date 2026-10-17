@@ -6,7 +6,10 @@ import java.io.IOException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 import org.apache.commons.lang3.RandomStringUtils;
@@ -15,6 +18,8 @@ import org.openqa.selenium.Platform;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.chromium.ChromiumDriver;
 import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.remote.CapabilityType;
@@ -37,7 +42,7 @@ public Properties p;
 	
 	@BeforeClass(groups= {"Sanity","Regression","Master"})
 	@Parameters({"os","browser"})
-	public void setup(String os, String br) throws IOException
+	public void setup(String os, String br) throws IOException, InterruptedException
 	{
 		//Loading config.properties file
 		FileReader file=new FileReader("./src//test//resources//config.properties");
@@ -95,12 +100,31 @@ public Properties p;
 			}
 		}
 		
-			
-		driver.manage().deleteAllCookies();
+		// ... inside your setup method ...
+
+		ChromeOptions options = new ChromeOptions();
+
+		// 1. Force the browser to open in Incognito mode
+		options.addArguments("--incognito");
+
+		// 2. Hide common automation signatures
+		options.addArguments("--disable-blink-features=AutomationControlled");
+		options.setExperimentalOption("excludeSwitches", Collections.singletonList("enable-automation"));
+		options.setExperimentalOption("useAutomationExtension", false);
+
+		// 3. Fake a regular desktop browser User-Agent
+		options.addArguments("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36");
+
+		// FIX: Assign to the global class driver field, do not redefine the data type here
+		driver = new ChromeDriver(options);
+
 		driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
-		
-		driver.get(p.getProperty("appURL2")); // reading url from properties file.
+		driver.get(p.getProperty("appURL1")); 
 		driver.manage().window().maximize();
+
+		// Give the page a moment to resolve passive background challenges
+		Thread.sleep(10000); // 10 seconds is plenty for the alternative URL
+
 	}
 	
 	@AfterClass(groups= {"Sanity","Regression","Master"})
